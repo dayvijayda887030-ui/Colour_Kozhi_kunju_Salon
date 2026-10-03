@@ -21,6 +21,8 @@ const get = async (table, order = '&order=sort.asc,id.asc') => {
 const DEFAULTS = {
   settings: {
     owner_image: CHICK_ASSET,
+    owner_name: 'The heart behind the salon',
+    owner_bio: 'A little colour, a lot of care, and a warm welcome are at the heart of every visit.',
     hero_caption: 'Hair. Colour. Chaos.',
     hero_sub: 'Walk in chick, walk out icon.',
     sticker1: 'Cuts', sticker2: '🎨 Colour', sticker3: '✨ Glow up',
@@ -51,6 +53,9 @@ const mapSrc = l => {
 // ---------- render ----------
 function render(S, G, V, L) {
   $('#ownerImg').src = S.owner_image;
+  $('#aboutOwnerImg').src = S.owner_image || CHICK_ASSET;
+  $('#ownerName').textContent = S.owner_name || DEFAULTS.settings.owner_name;
+  $('#ownerBio').textContent = S.owner_bio || DEFAULTS.settings.owner_bio;
   $('#heroCap').textContent = S.hero_caption;
   $('#heroSub').textContent = S.hero_sub;
   ['1', '2', '3'].forEach(n => $('#st' + n).textContent = S['sticker' + n] || '');
@@ -182,7 +187,7 @@ function animate() {
     .add(() => $('#loader').remove());
 
   // hero scroll + mouse parallax
-  gsap.to('.giant', { scale: 1.5, yPercent: -30, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
+  gsap.to('.giant', { scale: 1.08, yPercent: -8, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
   gsap.to('.owner', { yPercent: -12, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
   $('.hero').addEventListener('pointermove', e => {
     const x = (e.clientX / innerWidth - .5), y = (e.clientY / innerHeight - .5);

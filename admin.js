@@ -73,6 +73,7 @@ const apiUsers = async (method, body, qs = '') => {
 // ---------- views ----------
 const FIELDS = [
   ['owner_image', 'Owner photo', 'image'],
+  ['owner_name', 'Owner name'], ['owner_bio', 'Owner story'],
   ['hero_caption', 'Hero caption'], ['hero_sub', 'Small caption'],
   ['sticker1', 'Sticker 1'], ['sticker2', 'Sticker 2'], ['sticker3', 'Sticker 3'],
   ['tags', 'Marquee words (comma separated)'],
