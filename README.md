@@ -4,7 +4,7 @@ Static site + Vercel serverless function + Supabase.
 
 ## 1. Supabase
 1. Create a project at supabase.com.
-2. SQL Editor → paste & run `supabase.sql`.
+2. Production deploys apply the tracked files in `supabase/migrations/` automatically. For a manual setup, SQL Editor → paste & run `supabase.sql`.
 3. Authentication → Users → **Add user** (your email + password, tick *Auto confirm*).
 4. SQL Editor → run (with your email):
    `insert into profiles (id, role) select id, 'super_admin' from auth.users where email = 'YOUR_EMAIL';`
@@ -14,11 +14,14 @@ Static site + Vercel serverless function + Supabase.
 Edit `config.js` → paste URL + anon key.
 
 ## 3. Vercel
-1. Push this folder to GitHub → Import in Vercel (Framework: *Other*, no build command).
+1. Push this folder to GitHub → Import in Vercel (Framework: *Other*). `vercel.json` runs migrations during production builds and serves the project root as static output.
 2. Environment Variables:
    - `SUPABASE_URL` = your project URL
    - `SUPABASE_SERVICE_ROLE_KEY` = service_role key (**secret — never put it in config.js**)
+   - `SUPABASE_DB_URL` = Supabase Postgres connection string (**secret; production only**). `POSTGRES_URL` or `POSTGRES_PRISMA_URL` can be used instead.
 3. Deploy. Admin is at `/admin` (small "admin" link in the footer).
+
+Preview deployments skip database migrations. Keep the database URL out of `config.js`; the migration runner uses it only during the server-side Vercel build.
 
 ## Using the admin
 - **Content**: owner photo, hero captions, stickers, marquee words, Instagram / YouTube / Facebook links.

@@ -1,5 +1,3 @@
--- Run this whole file in Supabase > SQL Editor
-
 create table if not exists profiles (
   id uuid primary key references auth.users on delete cascade,
   role text not null check (role in ('admin','super_admin')),
@@ -24,20 +22,18 @@ create or replace function public.is_admin() returns boolean
 language sql security definer set search_path = public stable as
 $$ select exists (select 1 from profiles where id = auth.uid()) $$;
 
-alter table profiles  enable row level security;
-alter table settings  enable row level security;
-alter table gallery   enable row level security;
-alter table videos    enable row level security;
+alter table profiles enable row level security;
+alter table settings enable row level security;
+alter table gallery enable row level security;
+alter table videos enable row level security;
 alter table locations enable row level security;
 
--- profiles: a user can read only their own row (writes go through /api/users with the service key)
 do $$ begin
   if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'profiles' and policyname = 'own profile') then
     execute 'create policy "own profile" on public.profiles for select to authenticated using (id = auth.uid())';
   end if;
 end $$;
 
--- public content: everyone reads, admins write
 do $$
 declare
   t text;
@@ -60,7 +56,6 @@ begin
   end loop;
 end $$;
 
--- image storage
 insert into storage.buckets (id, name, public) values ('gallery', 'gallery', true) on conflict (id) do nothing;
 do $$ begin
   if not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'gallery read') then
@@ -73,8 +68,3 @@ do $$ begin
     execute 'create policy "gallery delete" on storage.objects for delete to authenticated using (bucket_id = ''gallery'' and public.is_admin())';
   end if;
 end $$;
-
--- FIRST SUPER ADMIN:
--- 1) Supabase > Authentication > Users > Add user (email + password, tick "Auto confirm")
--- 2) Put that same email below and run:
--- insert into profiles (id, role) select id, 'super_admin' from auth.users where email = 'YOUR_EMAIL@example.com';
