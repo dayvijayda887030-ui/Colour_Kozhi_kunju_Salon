@@ -21,8 +21,8 @@ const get = async (table, order = '&order=sort.asc,id.asc') => {
 const DEFAULTS = {
   settings: {
     owner_image: CHICK_ASSET,
-    owner_name: 'The heart behind the salon',
-    owner_bio: 'A little colour, a lot of care, and a warm welcome are at the heart of every visit.',
+    owner_name: 'Salon owner. Colour captain. Vibe curator.',
+    owner_bio: 'Big colour, good energy, zero boring hair days. Every look gets a little more you and a lot more wow.',
     hero_caption: 'Hair. Colour. Chaos.',
     hero_sub: 'Walk in chick, walk out icon.',
     sticker1: 'Cuts', sticker2: '🎨 Colour', sticker3: '✨ Glow up',
