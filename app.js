@@ -131,12 +131,16 @@ function dragOwner() {
   let drag = null, draggedAt = 0;
   owner.addEventListener('pointerdown', e => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const ownerRect = owner.getBoundingClientRect();
+    const heroRect = hero.getBoundingClientRect();
     drag = {
       pointerId: e.pointerId,
       startX: e.clientX,
       startY: e.clientY,
       x: Number(owner.dataset.dragX || 0),
       y: Number(owner.dataset.dragY || 0),
+      baseLeft: ownerRect.left - heroRect.left - Number(owner.dataset.dragX || 0),
+      baseTop: ownerRect.top - heroRect.top - Number(owner.dataset.dragY || 0),
       moved: false
     };
     owner.setPointerCapture(e.pointerId);
@@ -147,8 +151,8 @@ function dragOwner() {
     if (!drag || drag.pointerId !== e.pointerId) return;
     const deltaX = e.clientX - drag.startX;
     const deltaY = e.clientY - drag.startY;
-    const x = Math.max(-owner.offsetLeft, Math.min(hero.clientWidth - owner.offsetLeft - owner.offsetWidth, drag.x + deltaX));
-    const y = Math.max(-owner.offsetTop, Math.min(hero.clientHeight - owner.offsetTop - owner.offsetHeight, drag.y + deltaY));
+    const x = Math.max(-drag.baseLeft, Math.min(hero.clientWidth - drag.baseLeft - owner.offsetWidth, drag.x + deltaX));
+    const y = Math.max(-drag.baseTop, Math.min(hero.clientHeight - drag.baseTop - owner.offsetHeight, drag.y + deltaY));
     drag.moved ||= Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4;
     owner.dataset.dragX = x;
     owner.dataset.dragY = y;
@@ -231,7 +235,6 @@ function animate() {
 
   // hero scroll + mouse parallax
   gsap.to('.giant', { scale: 1.08, yPercent: -8, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
-  gsap.to('.owner', { yPercent: -12, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
   $('.hero').addEventListener('pointermove', e => {
     const x = (e.clientX / innerWidth - .5), y = (e.clientY / innerHeight - .5);
     $$('.hero [data-depth]').forEach(el => gsap.to(el, { x: x * el.dataset.depth, y: y * el.dataset.depth, duration: .8, overwrite: 'auto' }));
