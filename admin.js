@@ -71,32 +71,49 @@ const apiUsers = async (method, body, qs = '') => {
 };
 
 // ---------- views ----------
-const FIELDS = [
-  ['owner_image', 'Owner photo', 'image'],
-  ['owner_name', 'Owner name'], ['owner_bio', 'Owner story'],
-  ['hero_caption', 'Hero caption'], ['hero_sub', 'Small caption'],
-  ['sticker1', 'Sticker 1'], ['sticker2', 'Sticker 2'], ['sticker3', 'Sticker 3'],
-  ['tags', 'Marquee words (comma separated)'],
-  ['instagram', 'Instagram link'], ['youtube', 'YouTube link'], ['facebook', 'Facebook link (footer)'],
-  ['phone', 'Phone (optional)']
+const CONTENT_DEFAULTS = {
+  owner_image: 'assets/Rainbow%20Feathered%20Chick%20Mascot.png',
+  owner_name: 'Salon owner. Colour captain. Vibe curator.',
+  owner_bio: 'Big colour, good energy, zero boring hair days. Every look gets a little more you and a lot more wow.',
+  hero_caption: 'Hair. Colour. Chaos.',
+  hero_sub: 'Walk in chick, walk out icon.',
+  sticker1: 'Cuts', sticker2: '🎨 Colour', sticker3: '✨ Glow up',
+  tags: 'HAIR,COLOUR,STYLE,GLOW,CHAOS,SLAY',
+  instagram: 'https://www.instagram.com/colour_kozhi_kunji_saloon',
+  youtube: 'https://youtube.com/@colourkozhikuji',
+  facebook: 'https://www.facebook.com/profile.php?id=100063850134309',
+  phone: ''
+};
+
+const CONTENT_GROUPS = [
+  { title: 'Owner profile', fields: [['owner_image', 'Owner photo', 'image'], ['owner_name', 'Owner name'], ['owner_bio', 'Owner story']] },
+  { title: 'Hero section', fields: [['hero_caption', 'Hero caption'], ['hero_sub', 'Small caption']] },
+  { title: 'Hero stickers', fields: [['sticker1', 'Sticker 1'], ['sticker2', 'Sticker 2'], ['sticker3', 'Sticker 3']] },
+  { title: 'Marquee', fields: [['tags', 'Marquee words (comma separated)']] },
+  { title: 'Social & contact', fields: [['instagram', 'Instagram link'], ['youtube', 'YouTube link'], ['facebook', 'Facebook link (footer)'], ['phone', 'Phone (optional)']] }
 ];
 
 const views = {
   async content() {
     const rows = must(await sb.from('settings').select('*'));
-    const S = Object.fromEntries(rows.map(r => [r.key, r.value]));
-    $('#view').innerHTML = `<div class="card"><h2 class="f">Site text & links</h2>
-      <p class="hint">Leave a box empty to use the default.</p>
-      ${FIELDS.map(([k, l, t]) => `<div class="row"><label>${l}</label><input data-k="${k}" value="${esc(S[k])}">${t === 'image' ? `<input type="file" accept="image/*" data-up="${k}" style="padding:6px">` : '<span></span>'}</div>`).join('')}
-      <button id="save">Save all 💾</button></div>`;
+    const S = { ...CONTENT_DEFAULTS };
+    rows.forEach(row => { if (row.value) S[row.key] = row.value; });
+    $('#view').innerHTML = CONTENT_GROUPS.map((group, index) => `<div class="card">
+      <h2 class="f">${group.title}</h2>
+      ${group.fields.map(([key, label, type]) => `<div class="row"><label>${label}</label><input data-k="${key}" value="${esc(S[key])}">${type === 'image' ? `<input type="file" accept="image/*" data-up="${key}" style="padding:6px">` : '<span></span>'}</div>`).join('')}
+      <button type="button" data-save-group="${index}">Save ${group.title}</button></div>`).join('');
     $('#view').querySelectorAll('[data-up]').forEach(f => f.onchange = () => run(async () => {
-      if (!f.files[0]) return; toast('Uploading…');
-      document.querySelector(`input[data-k="${f.dataset.up}"]`).value = await upload(f.files[0]); toast('Uploaded — now press Save');
+      if (!f.files[0]) return;
+      toast('Uploading…');
+      document.querySelector(`#view input[data-k="${f.dataset.up}"]`).value = await upload(f.files[0]);
+      toast('Uploaded — save Owner profile to apply');
     }));
-    $('#save').onclick = () => run(async () => {
-      const out = [...document.querySelectorAll('input[data-k]')].map(i => ({ key: i.dataset.k, value: i.value.trim() }));
-      must(await sb.from('settings').upsert(out)); toast('Saved ✨');
-    });
+    $('#view').querySelectorAll('[data-save-group]').forEach(button => button.onclick = () => run(async () => {
+      const group = CONTENT_GROUPS[+button.dataset.saveGroup];
+      const out = group.fields.map(([key]) => ({ key, value: $(`#view input[data-k="${key}"]`).value.trim() }));
+      must(await sb.from('settings').upsert(out));
+      toast(`${group.title} saved`);
+    }));
   },
 
   async gallery() {
@@ -141,16 +158,35 @@ const views = {
   async videos() {
     const rows = must(await sb.from('videos').select('*').order('sort').order('id'));
     const kind = u => /instagram\.com/.test(u) ? 'Instagram' : /youtu/.test(u) ? 'YouTube' : '?';
-    $('#view').innerHTML = `<div class="card"><h2 class="f">Add video</h2>
-      <p class="hint">Paste an Instagram post/reel link or a YouTube video/short link. Instagram posts must be public.</p>
-      <div class="inline"><input id="vu" placeholder="https://…"><input id="vt" placeholder="title (optional)"><button id="va">Add</button></div></div>
+    $('#view').innerHTML = `<div class="card"><h2 class="f">Add Instagram video</h2>
+      <p class="hint">Use a public Instagram post or reel link.</p>
+      <div class="inline"><input id="instagramUrl" type="url" placeholder="Instagram URL"><input id="instagramTitle" placeholder="Title (optional)"><button type="button" data-video-add="instagram">Add Instagram</button></div></div>
+      <div class="card"><h2 class="f">Add YouTube video</h2>
+      <p class="hint">Use a YouTube video, short, or live link.</p>
+      <div class="inline"><input id="youtubeUrl" type="url" placeholder="YouTube URL"><input id="youtubeTitle" placeholder="Title (optional)"><button type="button" data-video-add="youtube">Add YouTube</button></div></div>
       <div class="card"><h2 class="f">${rows.length} videos</h2><div class="list">${rows.map(r =>
-        `<div><span class="tag">${kind(r.url)}</span><b>${esc(r.title || r.url)}</b><button class="danger" data-d="${r.id}">🗑</button></div>`).join('')}</div></div>`;
-    $('#va').onclick = () => run(async () => {
-      const u = $('#vu').value.trim(); if (kind(u) === '?') return toast('Use an Instagram or YouTube link', true);
-      must(await sb.from('videos').insert({ url: u, title: $('#vt').value.trim(), sort: await nextSort('videos') })); go('videos');
-    });
-    $('#view').onclick = e => { const b = e.target.closest('[data-d]'); if (b && confirm('Delete?')) run(async () => { must(await sb.from('videos').delete().eq('id', b.dataset.d)); go('videos'); }); };
+        `<div><span class="tag">${kind(r.url)}</span><input type="url" value="${esc(r.url)}" data-video-url="${r.id}" aria-label="${kind(r.url)} URL"><input value="${esc(r.title)}" placeholder="Title (optional)" data-video-title="${r.id}" aria-label="Video title"><button type="button" class="ghost" data-video-save="${r.id}">Save</button><button type="button" class="danger" data-d="${r.id}">🗑</button></div>`).join('')}</div></div>`;
+    $('#view').onclick = e => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.videoAdd) run(async () => {
+        const platform = b.dataset.videoAdd;
+        const url = $(`#${platform}Url`).value.trim();
+        const title = $(`#${platform}Title`).value.trim();
+        const expected = platform === 'instagram' ? 'Instagram' : 'YouTube';
+        if (kind(url) !== expected) return toast(`Enter a valid ${expected} URL`, true);
+        must(await sb.from('videos').insert({ url, title, sort: await nextSort('videos') }));
+        go('videos');
+      });
+      if (b.dataset.videoSave) run(async () => {
+        const id = b.dataset.videoSave;
+        const url = $(`#view [data-video-url="${id}"]`).value.trim();
+        const title = $(`#view [data-video-title="${id}"]`).value.trim();
+        if (kind(url) === '?') return toast('Enter an Instagram or YouTube URL', true);
+        must(await sb.from('videos').update({ url, title }).eq('id', id));
+        toast('Video updated');
+      });
+      if (b.dataset.d && confirm('Delete?')) run(async () => { must(await sb.from('videos').delete().eq('id', b.dataset.d)); go('videos'); });
+    };
   },
 
   async locations() {

@@ -65,8 +65,9 @@ function render(S, G, V, L) {
   $('#mq1').innerHTML = row.repeat(8);
   $('#mq2').innerHTML = row.repeat(8);
 
-  $('#hTrack').innerHTML = `<div class="big f">LOOKS</div>` +
-    G.slice(0, 10).map((g, i) => `<div class="hcard" data-i="${i}" data-cursor="VIEW"><img src="${esc(g.url)}" alt="${esc(g.caption || '')}" loading="lazy"></div>`).join('');
+  $('#hTrack').innerHTML = G.slice(0, 10)
+    .map((g, i) => `<div class="hcard" data-i="${i}" data-cursor="VIEW"><img src="${esc(g.url)}" alt="${esc(g.caption || '')}" loading="lazy"></div>`)
+    .join('');
 
   const cols = [[], [], []];
   G.forEach((g, i) => cols[i % 3].push(`<img src="${esc(g.url)}" alt="${esc(g.caption || '')}" data-i="${i}" data-cursor="VIEW" loading="lazy">`));
