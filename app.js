@@ -126,6 +126,48 @@ function sliders() {
   });
 }
 
+function dragOwner() {
+  const owner = $('.owner'), hero = $('.hero');
+  let drag = null, draggedAt = 0;
+  owner.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    drag = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      x: Number(owner.dataset.dragX || 0),
+      y: Number(owner.dataset.dragY || 0),
+      moved: false
+    };
+    owner.setPointerCapture(e.pointerId);
+    owner.classList.add('dragging');
+    e.preventDefault();
+  });
+  owner.addEventListener('pointermove', e => {
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    const deltaX = e.clientX - drag.startX;
+    const deltaY = e.clientY - drag.startY;
+    const x = Math.max(-owner.offsetLeft, Math.min(hero.clientWidth - owner.offsetLeft - owner.offsetWidth, drag.x + deltaX));
+    const y = Math.max(-owner.offsetTop, Math.min(hero.clientHeight - owner.offsetTop - owner.offsetHeight, drag.y + deltaY));
+    drag.moved ||= Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4;
+    owner.dataset.dragX = x;
+    owner.dataset.dragY = y;
+    owner.style.setProperty('--owner-drag-x', `${x}px`);
+    owner.style.setProperty('--owner-drag-y', `${y}px`);
+  });
+  const stopDrag = e => {
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    if (drag.moved) draggedAt = performance.now();
+    drag = null;
+    owner.classList.remove('dragging');
+  };
+  owner.addEventListener('pointerup', stopDrag);
+  owner.addEventListener('pointercancel', stopDrag);
+  owner.addEventListener('click', e => {
+    if (performance.now() - draggedAt < 350) { e.preventDefault(); e.stopPropagation(); }
+  });
+}
+
 function lightbox(G) {
   const st = document.createElement('style');
   st.textContent = `.lb{position:fixed;inset:0;z-index:9500;background:rgba(13,13,13,.94);display:none;place-items:center}
@@ -192,7 +234,7 @@ function animate() {
   gsap.to('.owner', { yPercent: -12, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
   $('.hero').addEventListener('pointermove', e => {
     const x = (e.clientX / innerWidth - .5), y = (e.clientY / innerHeight - .5);
-    $$('[data-depth]').forEach(el => gsap.to(el, { x: x * el.dataset.depth, y: y * el.dataset.depth, duration: .8, overwrite: 'auto' }));
+    $$('.hero [data-depth]').forEach(el => gsap.to(el, { x: x * el.dataset.depth, y: y * el.dataset.depth, duration: .8, overwrite: 'auto' }));
   });
 
   // pinned horizontal gallery
@@ -231,6 +273,6 @@ function animate() {
   const V = Array.isArray(v) ? v : DEFAULTS.videos;
   const L = Array.isArray(l) && l.length ? l : DEFAULTS.locations;
   render(S, G, V, L);
-  lazyIframes(); sliders(); lightbox(G); cursorAndFun(); animate();
+  lazyIframes(); sliders(); dragOwner(); lightbox(G); cursorAndFun(); animate();
 })();
 })();
