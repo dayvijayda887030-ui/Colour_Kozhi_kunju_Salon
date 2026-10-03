@@ -16,8 +16,13 @@ async function migrate() {
     throw new Error('Set SUPABASE_DB_URL or POSTGRES_URL in the Vercel Production environment.');
   }
 
+  const databaseUrl = new URL(connectionString);
+  if (databaseUrl.searchParams.get('sslmode') === 'require') {
+    databaseUrl.searchParams.set('uselibpqcompat', 'true');
+  }
+
   const client = new Client({
-    connectionString,
+    connectionString: databaseUrl.toString(),
     ssl: { rejectUnauthorized: false },
     connectionTimeoutMillis: 15000
   });
